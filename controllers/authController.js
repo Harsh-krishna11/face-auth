@@ -1,3 +1,4 @@
+import { log } from "@tensorflow/tfjs";
 import User from "../models/User.js";
 import { getFaceEmbedding } from "../utils/faceUtils.js";
 import jwt from "jsonwebtoken";
@@ -5,13 +6,15 @@ import jwt from "jsonwebtoken";
 export const register = async (req, res) => {
   try {
     const { username, email } = req.body;
-    // console.log("File received:", req.file);
+    console.log("user registering : ", req.file);
+    console.log("user detials : ", req.file);
 
     const imageUrl = req.file.path; // use path instead of secure_url
     if (!imageUrl)
       return res.status(400).json({ error: "Photo upload failed" });
 
     const embedding = await getFaceEmbedding(imageUrl);
+    console.log("Face embedding generated:", embedding);
 
     const user = new User({
       username,
@@ -22,9 +25,9 @@ export const register = async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "User registered successfully!", user });
+    res.json({ message: "User registered successfully!", user,success: true });
   } catch (err) {
-    res.status(400).json({ error: err.message });
+    res.status(400).json({ error: err.message ,success: false });
   }
 };
 
@@ -108,3 +111,63 @@ export const loginEmbedding = async (req, res) => {
     res.status(400).json({ error: err.message });
   }
 };
+
+// import User from "../models/User.js";
+// import { getFaceEmbedding } from "../utils/faceUtils.js";
+// import jwt from "jsonwebtoken";
+
+// export const register = async (req, res) => {
+//   try {
+//     const { username, email } = req.body;
+//     const imagePath = req.file?.path;
+//     if (!imagePath)
+//       return res.status(400).json({ error: "Photo upload failed" });
+
+//     const embedding = await getFaceEmbedding(imagePath);
+
+//     const user = new User({
+//       username,
+//       email,
+//       faceEmbedding: embedding,
+//       photoUrl: imagePath,
+//     });
+
+//     await user.save();
+
+//     res.json({ message: "User registered successfully!", user });
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// };
+
+// export const login = async (req, res) => {
+//   try {
+//     const imagePath = req.file?.path;
+//     if (!imagePath)
+//       return res.status(400).json({ error: "Photo upload failed" });
+
+//     const embedding = await getFaceEmbedding(imagePath);
+
+//     const users = await User.find();
+//     const matchedUser = users.find((user) => {
+//       const distance = Math.sqrt(
+//         user.faceEmbedding.reduce(
+//           (acc, val, i) => acc + (val - embedding[i]) ** 2,
+//           0
+//         )
+//       );
+//       return distance < 0.6;
+//     });
+
+//     if (!matchedUser)
+//       return res.status(401).json({ error: "Face not recognized" });
+
+//     const token = jwt.sign({ id: matchedUser._id }, process.env.JWT_SECRET, {
+//       expiresIn: "1h",
+//     });
+
+//     res.json({ message: "Login successful", token, user: matchedUser });
+//   } catch (err) {
+//     res.status(400).json({ error: err.message });
+//   }
+// };

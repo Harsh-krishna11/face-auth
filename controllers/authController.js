@@ -7,15 +7,30 @@ export const register = async (req, res) => {
   try {
     const { username, email } = req.body;
     console.log("user registering : ", req.file);
-    console.log("user detials : ", req.file);
+    console.log("user details : ", req.body);
 
-    const imageUrl = req.file.path; // use path instead of secure_url
-    if (!imageUrl)
-      return res.status(400).json({ error: "Photo upload failed" });
+    // Check if photo is uploaded
+    const imageUrl = req.file?.path; // safe navigation
+    if (!imageUrl) {
+      return res
+        .status(400)
+        .json({ error: "Photo upload failed", success: false });
+    }
 
+    // Check if user already exists
+    const existingUser = await User.findOne({ email });
+    if (existingUser) {
+      return res.status(401).json({
+        error: "User already registered with this email",
+        success: false,
+      });
+    }
+
+    // Generate face embedding
     const embedding = await getFaceEmbedding(imageUrl);
     console.log("Face embedding generated:", embedding);
 
+    // Create new user
     const user = new User({
       username,
       email,
@@ -25,9 +40,14 @@ export const register = async (req, res) => {
 
     await user.save();
 
-    res.json({ message: "User registered successfully!", user,success: true });
+    res.json({
+      message: "User registered successfully!",
+      user,
+      success: true,
+    });
   } catch (err) {
-    res.status(400).json({ error: err.message ,success: false });
+    console.error("Error in register:", err);
+    res.status(400).json({ error: err.message, success: false });
   }
 };
 
@@ -71,6 +91,8 @@ export const login = async (req, res) => {
 export const registerEmbedding = async (req, res) => {
   try {
     const { username, email, embedding } = req.body;
+    console.log("embedding : ", embedding);
+
     if (!embedding)
       return res.status(400).json({ error: "No embedding provided" });
 
@@ -86,6 +108,8 @@ export const registerEmbedding = async (req, res) => {
 export const loginEmbedding = async (req, res) => {
   try {
     const { embedding } = req.body;
+    console.log("embedding login : ", embedding);
+
     if (!embedding)
       return res.status(400).json({ error: "No embedding provided" });
 
